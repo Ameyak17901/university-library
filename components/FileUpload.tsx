@@ -3,9 +3,13 @@
 
 import { useToast } from "@/hooks/use-toast";
 import config from "@/lib/config";
-import { ImageKitProvider, IKUpload, IKImage } from "imagekitio-next";
+import { cn } from "@/lib/utils";
+import { ImageKitProvider, IKUpload, IKImage, IKVideo } from "imagekitio-next";
 import Image from "next/image";
 import { useRef, useState } from "react";
+
+const IMAGE_SIZE = 20 * 1024 * 1024;
+const VIDEO_SIZE = 50 * 1024 * 1024;
 
 const authenticator = async () => {
   try {
@@ -27,21 +31,44 @@ const authenticator = async () => {
   }
 };
 
-const ImageUpload = ({
-  onFileUpload,
-}: {
+interface Props {
+  type: "image" | "video";
+  accept: string;
+  placeholder: string;
+  folder: string;
+  variant: "dark" | "light";
   onFileUpload: (filePath: string) => void;
-}) => {
+  value?: string;
+}
+
+const FileUpload = ({
+  type,
+  accept,
+  placeholder,
+  folder,
+  variant,
+  onFileUpload,
+  value,
+}: Props) => {
   const IkUploadRef = useRef(null);
-  const [file, setFile] = useState<{ filePath: string } | null>(null);
+  const [file, setFile] = useState<{ filePath: string | null }>({
+    filePath: value ?? null,
+  });
   const { toast } = useToast();
+  const [progress, setProgress] = useState(0);
+
+  const styles = {
+    button: variant === "dark" ? "bg-dark-300" : "bg-light-600",
+    placeholder: variant === "dark" ? "text-light-100" : "text-slate-500",
+    text: variant === "dark" ? "text-light-100" : "text-dark-400",
+  };
 
   const onError = (error: any) => {
     console.error(error);
 
     toast({
-      title: "Failed to upload",
-      description: "Your image could not be uploaded, Please try again",
+      title: `${type} upload failed`,
+      description: `Your ${type} could not be uploaded, Please try again`,
       variant: "destructive",
     });
   };
@@ -49,9 +76,33 @@ const ImageUpload = ({
     setFile(res);
     onFileUpload(res.filePath);
     toast({
-      title: "Image uploaded successfully...",
+      title: `${type} uploaded successfully...`,
       description: `${res.filePath} uploaded`,
     });
+  };
+
+  const onValidate = (file: File) => {
+    if (type === "image") {
+      if (file.size > IMAGE_SIZE) {
+        toast({
+          title: "File size too large",
+          description: "Please upload a file that is less than 20MB in size",
+          variant: "destructive",
+        });
+
+        return false;
+      }
+    } else if (type === "video") {
+      if (file.size > VIDEO_SIZE) {
+        toast({
+          title: "File size is too large",
+          description: "Please upload a file that is less than 50MB in size",
+          variant: "destructive",
+        });
+        return false;
+      }
+    }
+    return true;
   };
 
   return (
@@ -65,9 +116,18 @@ const ImageUpload = ({
         className="hidden"
         onError={onError}
         onSuccess={onSuccess}
+        validateFile={onValidate}
+        onUploadStart={() => setProgress(0)}
+        onUploadProgress={({ loaded, total }) => {
+          const percent = Math.round((loaded / total) * 100);
+
+          setProgress(percent);
+        }}
+        folder={folder}
+        accept={accept}
       />
       <button
-        className="upload-btn"
+        className={cn("upload-btn", styles.button)}
         onClick={(e) => {
           e.preventDefault();
           if (IkUploadRef.current) {
@@ -83,23 +143,37 @@ const ImageUpload = ({
           width={20}
           height={20}
         />
+        <p className={cn("text-base", styles.placeholder)}> {placeholder}</p>
+        {file && (
+          <p className={cn("upload-filename", styles.text)}>{file.filePath}</p>
+        )}
       </button>
-      <p className="text-base text-light-100 "> Upload a file</p>
-      {file && (
-        <>
-          <p className="upload-filename">{file.filePath}</p>
-        </>
+
+      {progress > 0 && progress !== 100 && (
+        <div className="w-full rounded-full bg-green-200">
+          <div className="progress" style={{ width: `${progress}%` }}>
+            {progress}%
+          </div>
+        </div>
       )}
-      {file && (
-        <IKImage
-          alt={file.filePath}
-          path={file.filePath}
-          width={500}
-          height={300}
-        />
-      )}
+
+      {file &&
+        (type === "image" ? (
+          <IKImage
+            alt={file.filePath}
+            path={file.filePath}
+            width={500}
+            height={300}
+          />
+        ) : type === "video" ? (
+          <IKVideo
+            path={file.filePath}
+            controls={true}
+            className="h-96 w-full rounded-xl"
+          />
+        ) : null)}
     </ImageKitProvider>
   );
 };
 
-export default ImageUpload;
+export default FileUpload;

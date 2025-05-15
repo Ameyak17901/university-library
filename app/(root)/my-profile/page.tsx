@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { sampleBooks } from "@/constants";
 import { signOut } from "@/auth";
 
-const Page = () => {
+const Page = async () => {
   return (
     <>
       <form

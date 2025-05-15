@@ -8,6 +8,20 @@
       "when": 1746862344841,
       "tag": "0000_elite_moonstone",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1747234188432,
+      "tag": "0001_tiresome_mole_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1747290608348,
+      "tag": "0002_little_scorpion",
+      "breakpoints": true
     }
   ]
 }
