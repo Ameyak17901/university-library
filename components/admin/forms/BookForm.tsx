@@ -27,6 +27,7 @@ interface Props extends Partial<Book> {
   type?: "create" | "update";
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const BookForm = ({ type, ...book }: Props) => {
   const form = useForm<z.infer<typeof bookSchema>>({
     resolver: zodResolver(bookSchema),
